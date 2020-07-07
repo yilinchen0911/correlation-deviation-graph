@@ -1,0 +1,4 @@
+python synthetic_study1.py
+python synthetic_study2.py
+python optimal_number_of_cluster_study.py
+python cyberShakae_study.py

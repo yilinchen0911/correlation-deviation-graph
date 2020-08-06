@@ -31,15 +31,16 @@ def main():
     for i in range(len(number_of_cluster)):
         fig, ax = plt.subplots(figsize=(4, 4))
         ax.errorbar(x[1:number_of_eigenval], eigen_diff_mean[i, 1:number_of_eigenval],
-                    yerr=eigen_diff_std[i, 1:number_of_eigenval], uplims=True, lolims=True)
+                    yerr=eigen_diff_std[i, 1:number_of_eigenval], uplims=True, lolims=True, fmt='o')
         ax.set_ylabel('$\delta_k$')
         ax.set_xlabel('$k$')
         ax.set_xticks(x[1:number_of_eigenval])
         ax.errorbar(x[number_of_cluster[i] - 1], eigen_diff_mean[i, number_of_cluster[i] - 1], yerr=eigen_diff_std[i, number_of_cluster[i] - 1],
-                    uplims=True, lolims=True, color='red')
+                    uplims=True, lolims=True, color='red', fmt='o')
+        ax.set_ylim([0, 30])
         fig.tight_layout()
         fig.savefig('figure/eigen_gap_' + 'K = ' +
-                    str(number_of_cluster[i]), dpi=300)
+                    str(number_of_cluster[i]), dpi=300, bbox_inches = 'tight', pad_inches = 0)
 
 
 if __name__ == '__main__':

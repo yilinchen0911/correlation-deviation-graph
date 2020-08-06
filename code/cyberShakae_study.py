@@ -12,6 +12,8 @@ if __name__ == '__main__':
         16, figure_file_name="figure/eigen_gap_PH.png")
     spatial_graph_cyberShake_PH.clustering(
         method="Spectral", num_clust=5, num_eig=3)
+    spatial_graph_cyberShake_PH.visualize_correlation_distance_by_community(
+        figure_file_name="figure/coff_dist_PH_by_community.png")
     sns.reset_orig()
     spatial_graph_cyberShake_PH.visualize_adjacency_matrix(
         method="byCommunitySize", figure_file_name="figure/CyberShakePHSpectralAdjacencyMatrix_num_clust_5_balanced.png")

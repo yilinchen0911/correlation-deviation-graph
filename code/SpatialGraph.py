@@ -235,18 +235,20 @@ class SpatialGraph(object):
         self.visualize_matrix(A, figure_file_name, method)
 
     def annotate_matrix_figure(self, fig, ax, node_community_size, rearranged_community_order=None):
-        ax.get_xaxis().set_visible(False)
-        ax.get_yaxis().set_visible(False)
+        # ax.get_xaxis().set_visible(False)
+        # ax.get_yaxis().set_visible(False)
+        ax.set_xlabel('Node number')
+        ax.set_ylabel('Node number')
         for i in range(len(node_community_size)):
             if node_community_size[i] > 11:
-                ax.annotate('', xy=(-20, sum(node_community_size[:i]) - 3), xytext=(-20, sum(node_community_size[:(i+1)]) + 3), textcoords='data',
+                ax.annotate('', xy=(-55, sum(node_community_size[:i]) - 3), xytext=(-55, sum(node_community_size[:(i+1)]) + 3), textcoords='data',
                             arrowprops=dict(arrowstyle='<->', facecolor='red'),
                             annotation_clip=False)
                 if rearranged_community_order is None:
-                    ax.annotate(str(i + 1), xy=(-35, (sum(node_community_size[:i]) + sum(node_community_size[:(i+1)])) / 2),
+                    ax.annotate(str(i + 1), xy=(-70, (sum(node_community_size[:i]) + sum(node_community_size[:(i+1)])) / 2),
                                 annotation_clip=False, bbox={"boxstyle": "circle", "fc": "w"}, size=20.0 / (i//9 + 2))
                 else:
-                    ax.annotate(str(rearranged_community_order[i] + 1), xy=(-35, (sum(node_community_size[:i]) + sum(node_community_size[:(i+1)])) / 2),
+                    ax.annotate(str(rearranged_community_order[i] + 1), xy=(-70, (sum(node_community_size[:i]) + sum(node_community_size[:(i+1)])) / 2),
                                 annotation_clip=False, bbox={"boxstyle": "circle", "fc": "w"}, size=20.0 / (rearranged_community_order[i]//9 + 2))
 
     def visualize_matrix(self, A, figure_file_name, method="byRandom"):
@@ -332,7 +334,7 @@ class SpatialGraph(object):
             method, data=[avergaedDist, averagedCoff])
         return empiricalModel
 
-    def visualize_correlation_distance(self, min_number_for_rho=7, max_distance_for_rho=100, figure_file_name="test.png", binsize=20, R=100):
+    def visualize_correlation_distance(self, min_number_for_rho=7, max_distance_for_rho=100, figure_file_name="test.png", binsize=20, R=101):
         site_id = self.data_dict['siteID']
         unique_site_id = np.unique(site_id)
         dist = []
@@ -346,18 +348,121 @@ class SpatialGraph(object):
                 if rho != None and distance < max_distance_for_rho:
                     dist.append(distance)
                     coff.append(rho)
+        #dist_average, coff_average = mean_in_each_bin(dist, coff, binsize, R)
+        empirical_correlation_model = EmpiricalSpatialCorrelationModel(
+            "weighted_least_square", data=[dist, coff], search_range = (79, 81))
+        self.empirical_correlation_model_global = empirical_correlation_model
+        fig = plt.figure(figsize=(8, 8))
+        plt.plot(dist, coff, '.', markersize=1,
+                 label='Correlation Coefficient')
+        plt.plot(np.arange(0, R, 10), empirical_correlation_model.predict(1, np.arange(
+            0, R, 10)), '-k', label='Fitted Global Correlation Function', linewidth=3)
+        #plt.plot(dist_average, coff_average, '*k', markersize = 8, label = 'Averaged Correlation Coefficient')
+        plt.xlabel('Distance [km]', fontsize=15)
+        plt.tick_params(axis='both', which='major', labelsize=15)
+        plt.ylabel('Correlation Coefficient', fontsize=15)
+        plt.legend(prop={'size': 15}, loc='upper right')
+        plt.ylim([-0.5, 1])
+        fig.savefig(figure_file_name)
+        fig.clf()
+        print(empirical_correlation_model.range)
+        print(empirical_correlation_model.predict(1, empirical_correlation_model.range))
+
+    def correlation_distance_plot(self, dist, coff, figure_file_name, *args, binsize=20, R=101, **kwargs):
         dist_average, coff_average = mean_in_each_bin(dist, coff, binsize, R)
         empirical_correlation_model = EmpiricalSpatialCorrelationModel(
             "fitted_exponential", data=[dist_average, coff_average]).predict
         fig = plt.figure(figsize=(8, 8))
         plt.plot(dist, coff, '.', markersize=1,
                  label='Correlation Coefficient')
-        plt.plot(np.arange(0, R, 0.01), empirical_correlation_model(1, np.arange(
-            0, R, 0.01)), '-k', label='Fitted Global Correlation Function', linewidth=3)
-        #meanDist, meanCoff = meanInEachBin([x[0] for x in result], [x[1] for x in result], binsize, R)
-        #plt.plot(meanDist, meanCoff, '*k', markersize = 8, label = 'Averaged Correlation Coefficient')
+        plt.plot(np.arange(0, R, 10), empirical_correlation_model(1, np.arange(
+            0, R, 10)), *args, **kwargs)
         plt.xlabel('Distance [km]', fontsize=15)
         plt.tick_params(axis='both', which='major', labelsize=15)
         plt.ylabel('Correlation Coefficient', fontsize=15)
-        plt.legend(prop={'size': 15}, loc='lower left')
+        plt.legend(prop={'size': 15}, loc='upper right')
+        plt.ylim([-0.5, 1])
+        fig.savefig(figure_file_name)
+        fig.clf()
+
+    def get_correlation_coefficient_within_community(self, community, min_number_for_rho, max_distance_for_rho):
+        dist_community = []
+        coff_community = []
+        for i in range(len(community)):
+            for j in range(i + 1, len(community)):
+                rho = get_correlation_coefficient(
+                    self.nodes[community[i]], self.nodes[community[j]], self.data_dict, min_number_for_rho)
+                distance = get_distance(
+                    self.nodes[community[i]], self.nodes[community[j]], self.data_dict)
+                if rho != None and distance < max_distance_for_rho:
+                    dist_community.append(distance)
+                    coff_community.append(rho)
+        return dist_community, coff_community
+
+    def get_correlation_coefficient_across_community(self, community1, community2, min_number_for_rho, max_distance_for_rho):
+        dist_community = []
+        coff_community = []
+        for i in range(len(community1)):
+            for j in range(len(community2)):
+                rho = get_correlation_coefficient(
+                    self.nodes[community1[i]], self.nodes[community2[j]], self.data_dict, min_number_for_rho)
+                distance = get_distance(
+                    self.nodes[community1[i]], self.nodes[community2[j]], self.data_dict)
+                if rho != None and distance < max_distance_for_rho:
+                    dist_community.append(distance)
+                    coff_community.append(rho)
+        return dist_community, coff_community
+
+    def visualize_correlation_distance_by_community(self, min_number_for_rho=7, max_distance_for_rho=100, figure_file_name="test.png", binsize=20, R=101):
+        cmap = plt.cm.seismic
+        norm = matplotlib.colors.Normalize(vmin=0, vmax=len(self.partition))
+        community_name = ['Community 1', 'Communities 2 & 3', 'Community 4']
+        community_symbol = ['o', 's', '^']
+        community_color = [1, 3, 4]
+        search_range_list = [(224, 226), (167, 169), (55, 57)]
+        empirical_correlation_models = []
+        community_copy = self.partition.copy()
+        community_merged = []
+        community_merged.append(community_copy[1])
+        community_merged.append(np.concatenate((community_copy[0], community_copy[2], community_copy[3])))
+        community_merged.append(community_copy[4])
+        for community_index, community in enumerate(community_merged):
+            dist_community, coff_community = self.get_correlation_coefficient_within_community(community, min_number_for_rho, max_distance_for_rho)
+            self.correlation_distance_plot(dist_community, coff_community, 'figure/coff_dist_PH_community_' + community_name[community_index] + '.png', '-*', color=cmap(norm(community_color[community_index])), label=community_name[community_index], marker = community_symbol[community_index], linewidth=2)
+            #dist_average, coff_average = mean_in_each_bin(dist_community, coff_community, binsize, R)
+            empirical_correlation_model_community = EmpiricalSpatialCorrelationModel(
+                "weighted_least_square", data=[dist_community, coff_community], search_range = search_range_list[community_index])
+            empirical_correlation_models.append(empirical_correlation_model_community)
+
+        # for i in range(len(community_merged)):
+        #     for j in range(i + 1, len(community_merged)):
+        #         dist_community, coff_community = self.get_correlation_coefficient_across_community(community_merged[i], community_merged[j], min_number_for_rho, max_distance_for_rho)
+        #         self.correlation_distance_plot(dist_community, coff_community, 'figure/coff_dist_PH_community_' + community_name[i] + '-' + community_name[j] + '.png', '--k', label=community_name[i] + '-' + community_name[j], linewidth=2)
+        #
+
+        dist_across_community, coff_across_community = [], []
+        for i in range(len(community_merged)):
+            for j in range(i + 1, len(community_merged)):
+                dist_community, coff_community = self.get_correlation_coefficient_across_community(community_merged[i], community_merged[j], min_number_for_rho, max_distance_for_rho)
+                dist_across_community.extend(dist_community)
+                coff_across_community.extend(coff_community)
+        #self.correlation_distance_plot(dist_across_community, coff_across_community, 'figure/coff_dist_PH_across_community.png', '--k', label='Across Communities Correlation', linewidth=2)
+        #dist_average, coff_average = mean_in_each_bin(dist_across_community, coff_across_community, binsize, R)
+        empirical_correlation_model_across_community = EmpiricalSpatialCorrelationModel(
+                "weighted_least_square", data=[dist_across_community, coff_across_community], search_range = (23, 25))
+
+        fig = plt.figure(figsize=(8, 8))
+        for i, empirical_correlation_model in enumerate(empirical_correlation_models):
+            plt.plot(np.arange(0, R, 10), empirical_correlation_model.predict(1, np.arange(
+                0, R, 10)), '-*', color=cmap(norm(community_color[i])), label= community_name[i] + ', $\hat{r}$ = ' + "{:.1f}".format(empirical_correlation_model.range), marker = community_symbol[i], linewidth=2)
+        plt.plot(np.arange(0, R, 1), self.empirical_correlation_model_global.predict(1, np.arange(
+            0, R, 1)), '-k', label='Global' + ', $\hat{r}$ = ' + "{:.1f}".format(self.empirical_correlation_model_global.range), linewidth=2)
+        plt.plot(np.arange(0, R, 1), empirical_correlation_model_across_community.predict(1, np.arange(
+            0, R, 1)), '--k', label='Across Communities' + ', $\hat{r}$ = ' + "{:.1f}".format(empirical_correlation_model_across_community.range), linewidth=2)
+        plt.xlabel('Distance [km]', fontsize=15)
+        plt.tick_params(axis='both', which='major', labelsize=15)
+        plt.ylabel('Correlation Coefficient', fontsize=15)
+        # handles, labels = plt.gca().get_legend_handles_labels()
+        # order = [2,1,3,4,0]
+        plt.legend(prop={'size': 15}, loc='upper right')
         fig.savefig(figure_file_name)

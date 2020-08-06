@@ -178,15 +178,18 @@ if __name__ == '__main__':
     graph_obj = generate_sythetic_graph_function(
         correlation_matrix, expected_correlarion_matrix, 145, "Deviation", 2)
     graph_obj.clustering(method='Spectral', num_clust=3, num_eig=3)
+    print(evaluate_single_graph(graph_obj, node_label))
     visualize_synthetic_data(node_location, get_graph_node_label(
         graph_obj), 'figure/2Deviation_synthetic_detected.png', order=[1, 2, 0])
     graph_obj = generate_sythetic_graph_function(
         correlation_matrix, expected_correlarion_matrix, 145, "Unweighted", 2)
     graph_obj.clustering(method='Spectral', num_clust=3, num_eig=3)
+    print(evaluate_single_graph(graph_obj, node_label))
     visualize_synthetic_data(node_location, get_graph_node_label(
         graph_obj), 'figure/2Unweighted_synthetic__detected.png', order=[1, 2, 0])
     graph_obj = generate_sythetic_graph_function(
         correlation_matrix, expected_correlarion_matrix, 145, "Pearson", 2)
     graph_obj.clustering(method='Spectral', num_clust=3, num_eig=3)
+    print(evaluate_single_graph(graph_obj, node_label))
     visualize_synthetic_data(node_location, get_graph_node_label(
         graph_obj), 'figure/2Pearson_synthetic__detected.png', order=[1, 2, 0])
